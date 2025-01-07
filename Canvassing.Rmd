@@ -2,9 +2,7 @@
 title: "The Ground Game"
 author: "Drew Jones"
 subtitle: My contributions to the 84th District State House Race
-output:
-  html_document: default
-  word_document: default
+output: html_document
 ---
 
 ```{r setup, include=FALSE, echo = FALSE}
@@ -29,14 +27,14 @@ library(scales)
 
 ```{r Dataset setup, echo=FALSE, include=FALSE, message=FALSE}
 # read in the data set
-canvass <- read_excel("~/PLS Research /Canvassing Project.xlsx")
+canvass <- read_excel("Canvassing Project.xlsx")
 
 set.seed(333)
 ```
 
 ### Introduction
 
-In this project I analyze the a dataset that I create comprised of records of my canvassing in Michigan's 84th State House District during the 2024 election. To create the dataset, I logged the results of my individuals knock lists. 
+In this project I analyze a dataset I created out of records from my canvassing in Michigan's 84th State House District during the 2024 election. To create the dataset, I logged the results of my individuals door knock lists and information from my phone's pedometer. 
 
 My primary interest here is to determine what impacted my response rate. As a result, my response variable will be `response_rate`.
 
