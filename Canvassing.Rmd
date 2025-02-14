@@ -42,7 +42,7 @@ My primary interest here is to determine what impacted my response rate. As a re
 
 Common belief, and something I have oft-repeated, is that one should expect responses on approximatey 10% of doors. As a result, I will be examining if that was the case for me. Additionally, it is expected that weekends will see a higher response rate. I test this as well. 
 
-### Making additional variables
+### Making Additional Variables
 
 ```{r adjusted steps, echo = FALSE}
 # creating variable adj_steps
@@ -51,7 +51,7 @@ canvass_clean <- canvass |>
 ```
 `Steps` was taken directly from my phone's pedometer function. On days when I attended class, I took approximately 5000 additional steps while on-campus. On days when I did not attend class, I expect the vast majority of my step count to come directly from canvassing. Here, I create the adjusted steps variable, `adj_steps` to account for those additional steps.
 
-### Explanatory Data analysis
+### Explanatory Data Analysis
 
 An observation is a single day that I Canvassed, and are named based on the `Date`. The variable `Doors` indicates the total number of doors that I knocked that day. `Attempts` is the number of people I attempted to reach. `Steps` is the total number of steps I took that day. `Lists` is number of lists of doors I worked on on a given day. `Class` is a dummy variable indicating if I attended class that day on-campus at Grand Valley State University in Allendale, MI. `Weekend` is a dummy variable indicating if that day was a weekend day or not.
 
@@ -119,7 +119,7 @@ canvass_clean_outlierless <- canvass_clean |>
 ```
 That outlier represents a day with 149 doors and 1 response and is not a typo.  Moving forward, that outlier is removed. 
 
-### Basic analysis
+### Basic Analysis
 Now I examine the `response_rate` over time.
 
 ```{r UNUSED weekday plot 1, eval=FALSE, include=FALSE}
@@ -857,7 +857,7 @@ steps_attempts_interaction_plot
 I have determined that the plausible interactions between variables here are `Attempts`\*`Lists`, `Attempts`\*`Weekend`, and `Steps`\*`Weekend`. These interactions will be used to fit the linear regression model. 
 
 
-### Fitting linear regression model
+### Fitting linear Regression Model
 
 
 ```{r fit max model, echo=FALSE, message=FALSE}
@@ -906,5 +906,5 @@ y = 10.56 + 2.31\,\text{Lists} + 0.05\,(\text{Weekend} \times \text{Attempts}) -
 
 ### Conclusions
 
-From all of this, there are somethings that are clear. Patterns are certainly present in `response_rate`. Specifically, it appears to have had two peaks, one in late August and in mid-October. The `response_rate` of weekend days was also significantly less variable than that of week days. More advanced statistical analysis of the data did not reveal any statistically significant relationships between the variables `Weekend` and response rate, or `Month` and response rate. 
+From all of this, there are some things that are clear. Patterns are certainly present in `response_rate`. Specifically, it appears to have had two peaks, one in late August and in mid-October. The `response_rate` of weekend days was also significantly less variable than that of weekdays. More advanced statistical analysis of the data did not reveal any statistically significant relationships between the variables `Weekend` and response rate, or `Month` and response rate. 
 
