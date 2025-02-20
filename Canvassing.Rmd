@@ -38,8 +38,6 @@ set.seed(333)
 
 In this project I analyze a dataset I created out of records from my canvassing in Michigan's 84th State House District during the 2024 Election. To create the dataset, I logged the results of my individual door knock lists and activity information from my phone's pedometer. 
 
-My primary interest here is to determine what impacted my response rate. As a result, my response variable will be `response_rate`, measured in percentage of doors knocked that saw a response.
-
 Common belief, and something I have oft-repeated, is that one should expect responses on approximatey 10% of doors. As a result, I examine if that was the case for me. Additionally, it is expected that weekends will see a higher `response_rate` due to a greater portion of people being off work on those days. I test this as well. I also seek out which individual day saw the highest `response_rate`. Finally, I model the data using Analysis of Variance and Multiple Linear Regression in an attempt to predict `response_rate`. 
 
 ### Making Additional Variables
@@ -49,13 +47,15 @@ Common belief, and something I have oft-repeated, is that one should expect resp
 canvass_clean <- canvass |>
   mutate(adj_steps = if_else(Class == "yes", Steps - 5000, Steps))
 ```
+My primary interest here is to determine what impacted the share of doors that I knocked that led to an interaction with a voter. As a result, my response variable will be `response_rate`, measured in percentage of doors knocked that saw a response.
+
 `Steps` was taken directly from my phone's pedometer function. On days when I attended class, I took approximately 5000 additional steps while on-campus. On days when I did not attend class, I expect the vast majority of my step count to come directly from canvassing. I create the adjusted steps variable, `adj_steps` to account for those additional steps.
 
 ### Explanatory Data Analysis
 
-An observation is a single day that I canvassed, and are named based on the `Date`. The variable `Doors` indicates the total number of doors that I knocked that day. `Attempts` is the number of people I attempted to reach. `Steps` is the total number of steps I took that day. `Lists` is number of lists of doors I was assigned on a given day. `Class` is a dummy variable indicating if I attended class that day on-campus at Grand Valley State University in Allendale, MI. `Weekend` is a dummy variable indicating if that day was a weekend day or not.
+An observation is a single day that I canvassed, and are named based on the `Date`. The variable `Doors` indicates the total number of doors that I knocked that day. `Attempts` is the number of people I attempted to reach. `Steps` is the total number of steps I took that day. `Lists` is the number of lists of doors I was assigned on a given day. `Class` is a dummy variable indicating if I attended class that day on-campus at Grand Valley State University in Allendale, MI. `Weekend` is a dummy variable indicating if that day was a weekend day or not.
 
-For example, a singles address with 2 voters that I was reaching out to would have a `Attempts` value of 2, and a `Doors` value of 1. On this campaign, lists varied from ~30-90 doors, and were usually completed fully. 
+For example, a single address with 2 voters that I was reaching out to would have a `Attempts` value of 2, and a `Doors` value of 1. On this campaign, lists varied from ~30-90 doors, and were usually completed fully. The `date` variable is already stored in POSIXct format, but I will apply `lubridate:ymd` to remove the unused time codes.
 
 My response variable `response_rate` is comprised of 100 $\div$ (Doors $\div$ Responses) to give a percentage of `Doors` that saw a response. 
 
@@ -66,7 +66,7 @@ canvass_clean <- canvass_clean |>
 ```
 
 
-To begin, I briefly examine the dataset with `skim`
+To begin, I briefly examine the dataset with `skim`:
 ```{r EDA, echo=FALSE, warning=FALSE}
 # exploratory data analysis
 skim(canvass_clean) |>
@@ -91,8 +91,6 @@ skim(canvass_clean) |>
 
 
 There are 45 total observations. I assembled this dataset by hand in Microsoft Excel, and as a result there are no missing values. Interestingly, most of the variables appear to have a slightly right-tailed distribution. This is perhaps most visible in `repsonse_rate`, but one could argue it is the case for each variable except `adj_steps`. The median `response_rate` is 10.61, which suggets that the common rule of thumb of 10% is broadly accurate. 
-
-The `date` variable is already stored in POSIXct format, but I will apply `lubridate:ymd` to remove the unused time codes.
 
 ```{r Date formatting, echo=FALSE, include=FALSE, message=FALSE}
 # converting `Date` to ymd format
@@ -133,7 +131,7 @@ response_rate_weekday_plot2 <- canvass_clean |>
 response_rate_weekday_plot2
 ```
 
-In *Figure 2*, we see that `response_rate` varied more day-to-day during the week than it did between weekend days. However, both appear to have followed a similar trend of peaks in late August and in the middle of October. 
+In *Figure 2*, I see that `response_rate` varied more day-to-day during the week than it did between weekend days. However, both appear to have followed a similar trend of peaks in late August and in mid-October. 
 
 
 ```{r response boxplot, echo = FALSE}
@@ -163,7 +161,7 @@ response_rate_weekend_boxplot <- canvass_clean |>
 response_rate_weekend_boxplot
 ```
 
-In *Figure 3*, we see that the mean and median of `response_rate` is similar for weekdays and weekends alike. Once again though, we see that rates varied greatly on weekdays. Both also appear to have a single outlier of especially high `response_rate`.
+In *Figure 3*, I see that the mean and median of `response_rate` are similar for weekdays and weekends alike. Once again though, I see that rates varied greatly on weekdays. Both also appear to have a single outlier of especially high `response_rate`.
 
 ```{r weekend summaries, echo = FALSE}
 # some numerical summaries of `response_rate` for the groups of `Weekend`
@@ -208,17 +206,16 @@ canvass_clean |>
   theme_vanilla()
 ```
 
-In *Figure 5* the biggest values of `response_rate` are shown. This includes the pair of outliers we saw in *Figure 3*, which we can now see are October 11th and August 24th. As we can see though, October only saw 14 `Doors` knocked, so that day appears to be an outlier in terms of my actual activity. August 15th therefore appears to be the largest "true" `response_rate` I had on a day. 
+In *Figure 5* the biggest values of `response_rate` are shown. This includes the pair of outliers I noted in *Figure 3*, which are October 11th and August 24th. It is worth observing that October 11th only saw 14 `Doors` knocked, so that day appears to be an outlier in terms of my actual activity as well. August 15th therefore appears to be the largest "true" `response_rate` I had on a day. 
 
 ### ANOVA: Weekend
-Next, I investigate whether `Weekend` is useful in helping to predict `response_rate`. 
+Next, I investigate whether `Weekend` is useful in helping to predict `response_rate`. What follows is an ANOVA F-Test.
 
 ```{r ANOVA model weekend, echo = FALSE}
 # make and then augment a linear model containing the variable Weekend
 lm_weekend <- lm(response_rate ~ Weekend, data = canvass_clean)
 lm_weekend_aug <- augment(lm_weekend)
 ```
-What follows is an ANOVA F-Test.
 
 My response variable is `response_rate` and the factor variable is `Weekend`. The population for this is all canvassing days and the sample is the 45 days that I have observatons for. 
 
@@ -295,7 +292,7 @@ combined_anova_plots_weekend <- dist_point_weekend + dist_hist_weekend + dist_bo
 combined_anova_plots_weekend
 ```
 
-The first condition is normal distribution of residuals, which I examine using the QQ plot, Histogram of residuals, and boxplot of residuals in *Figure 6*. The data is left-tailed but not egregiously so. I consider the residual distribution assumption met here. 
+The first condition is normal distribution of residuals, which I examine using the QQ plot, histogram of residuals, and boxplot of residuals in *Figure 6*. The data is left-tailed but not egregiously so. I consider the residual distribution assumption met here. 
 
 ```{r resid and predict plot weekend, echo = FALSE}
 res_pred_point <- lm_weekend_aug |>
@@ -355,13 +352,13 @@ anova_table_weekend <- anova(lm_weekend) |>
 anova_table_weekend
 ```
 
-As the assumption of constant variance is not met, it is not neccesarily useful to complete the process of ANOVA, but I show the table in *Figure 8* simply share the p-value. This is signifanly above the level of analysis 0.05 and reinforces my decision here to fail to reject the null hypotheses.
+As the assumption of constant variance is not met, it is not neccesarily useful to complete the process of ANOVA, but I show the table in *Figure 8* to simply share the p-value. This is significantly above the level of analysis 0.05 and reinforces my decision here to fail to reject the null hypotheses.
 
 The difference in mean `response_rate` for the two levels of `Weekend` is not statistically significant.
 
 ### ANOVA: Month
 
-Month of the year may also be useful in predicting `repsonse_rate`. We saw earlier that `response_rate` varied over time, peaking in August and October. Therefore, I create the variable `Month`, which is categorical with levels for August, September, October, and November.
+Month of the year may also be useful in predicting `repsonse_rate`. I saw earlier that `response_rate` varied over time, peaking in August and October. Therefore, I create the variable `Month`, which is categorical with levels for August, September, October, and November.
 
 ```{r month var, echo=FALSE}
 # create the month variable
@@ -443,7 +440,7 @@ combined_anova_plots_month <- dist_point_month + dist_hist_month + dist_box_mont
 combined_anova_plots_month
 ```
 
-For the `Month` model, the normal distribution of residuals assumption appears to be met, as we see in *Figure 9*. There is an outlier point which makes the distribution slightly left tailed but, as with `Weekend`, not severely. 
+For the `Month` model, the normal distribution of residuals assumption appears to be met, as I see in *Figure 9*. There is an outlier point which makes the distribution slightly left tailed but, as with `Weekend`, not severely. 
 
 ```{r resid and predict plot month, echo = FALSE}
 res_pred_point_month <- lm_month_aug |>
@@ -491,7 +488,7 @@ res_pred_point_month + res_pred_point_month_jitter +
 
 Some clustering is present in *Figure 10*. However, looking past the lone outlier with a residual above 20, the constant variance assumption is met. The residuals are relatively constant across the predicted values. 
 
-It is fair to assume that the residual an observation do not impact the residuals of any other observations, so the independence of residuals assumption is met.
+It is fair to assume that the residual of an observation does not impact the residuals of any other observations, so the independence of residuals assumption is met.
 
 ```{r anova table month, echo=FALSE}
 # use the lm model to run Analysis of Variance
@@ -530,7 +527,7 @@ canvass_clean |>
   )
 ```
 
-In *Figure 12* we see a weak positive relationship between `Steps` and `response_rate`. As to why this particular relationship exists, I would theorize that higher steps totals are associated with areas with less-dense housing. That sort of area may be populated more by adult families than young people, who would live with roommates and drive up the `Attempts` per door. 
+In *Figure 12* I see a weak positive relationship between `Steps` and `response_rate`. As to why this particular relationship exists, I would theorize that higher steps totals are associated with areas with less-dense housing. That sort of area may be populated more by adult families than young people, who would live with roommates and drive up the `Attempts` per door. 
 
 ```{r attempts response interaction, echo=FALSE, message=FALSE}
 canvass_clean |>
@@ -554,7 +551,7 @@ canvass_clean |>
   )
 ```
 
-In *Figure 13*, there is a strong negative relationship between `Attempts` and `response_rate`. This makes sense, as a the observations with the largest number of `Attempts` are likely households with multiple voters, such as one containing parents and children. A non-response to one of these doors would mean a high number of attempts. 
+In *Figure 13*, there is a strong negative relationship between `Attempts` and `response_rate`. This makes sense, as a the observations with the largest number of `Attempts` are likely households with multiple voters, such as one containing parents and adult children. A non-response to one of these doors would mean a high number of attempts. 
 
 ```{r lists response interaction, echo=FALSE, message=FALSE}
 canvass_clean |>
@@ -627,7 +624,7 @@ steps_list_interaction_plot <- canvass_clean |>
 steps_list_interaction_plot
 ```
 
-There could be an interaction between `Steps` and `Lists`. I would expect days where I did multiple `Lists` to be days where I worked a greater amount of time. As a result, I would expect those days to potentially have a greater number of `Steps` as well. In *Figure 15*, that interaction is examined, and the plot suggests that an interaction effect is not present. The regression lines for each level of `Lists` are approximately parralel. 
+There could be an interaction between `Steps` and `Lists`. I would expect days where I did multiple `Lists` to be days where I worked a greater amount of time. As a result, I would expect those days to have a greater number of `Steps` as well. In *Figure 15*, that interaction is examined, and the plot suggests that an interaction effect is not present. The regression lines for each level of `Lists` are approximately parallel. 
 
 ```{r attempts lists interaction, echo=FALSE, message=FALSE}
 # making a scatterplot for the interaction between lists and attempts
@@ -672,7 +669,7 @@ attempts_list_interaction_plot
 
 ```
 
-There may be an interaction between `Attempts` and `Lists` for a similar reason. Days with a greater number of `Lists` may have also seen a greater number of `Attempts` simply due to the amount of time spent canvassing. In *Figure 16*, we do appear to see an interaction effect between `Attempts` and `Lists`. 
+There may be an interaction between `Attempts` and `Lists` for a similar reason. Days with a greater number of `Lists` may have also seen a greater number of `Attempts` simply due to the amount of time spent canvassing. In *Figure 16*, I do appear to see an interaction effect between `Attempts` and `Lists`. 
 
 ```{r weekend attempts interaction, echo=FALSE, message=FALSE}
 # making a scatterplot for the interaction between weekend and attempts
@@ -792,7 +789,7 @@ steps_attempts_interaction_plot <- canvass_clean |>
 steps_attempts_interaction_plot
 ```
 
-`Steps` and `Attempts` may interact as well. Logically, `Attempts` would increase as `Steps` did. However, in *Figure 19*, there does not seem to be an effect, or at least a strong one. *Figure 19* is faceted on a binned version of the `Attempts` variable, and although the regression lines are not parallel, the three facets show positive relationships, and the low number of observations in the *High* plot leads me to believe that the trend would be similarly positive if more observations were present. Overall, this interaction effect is not clear enough to be included in the model. 
+`Steps` and `Attempts` may interact as well. Logically, `Attempts` would increase as `Steps` did. However, in *Figure 19*, there does not seem to be an effect, or at least not a strong one. *Figure 19* is faceted on a binned version of the `Attempts` variable, and although the regression lines are not parallel, the three facets show positive relationships, and the low number of observations in the *High* plot leads me to believe that the trend would be similarly positive if more observations were present. Overall, this interaction effect is not clear enough to be included in the model. 
 
 I have determined that the plausible interactions between variables here are `Attempts`\*`Lists`, `Attempts`\*`Weekend`, and `Steps`\*`Weekend`. These interactions will be used to fit the linear regression model. 
 
@@ -836,18 +833,18 @@ tidy(chosen_model)|>
   theme_vanilla()
 ```
 
-Looking at *Figure 21*, we see that the most powerful piece of the model is `Weekend`, with Weekend days leading to an approximate increase in `response_rate` of 4.8%.`Lists` is also somewhat more powerful, as each additional list is associated with a decrease of 2.3% in `response_rate`. The full equation for the model is shown below:
+Looking at *Figure 21*, I see that the most powerful piece of the model is `Weekend`, with Weekend days leading to an approximate increase in `response_rate` of 4.8%.`Lists` is also somewhat more powerful, as each additional list is associated with a decrease of 2.3% in `response_rate`. The full equation for the model is shown below:
 
 \[
 y = 10.56 + 2.31\,\text{Lists} + 0.05\,(\text{Weekend} \times \text{Attempts}) - 0.001\,(\text{Weekend} \times \text{Steps}) + \epsilon
 \]
 
-Ultimately, my chosen model, in addition to all of the best-performing models, feature adjsuted r-squared values lower than 0.4. This metric captures the amount of variance in the response variable, in this case `response_rate`, explained by the model, and a value that low indicates that this model is not realistically useful in predicting `respons_rate`, nor is any possible model with these variables. 
+Ultimately, my chosen model features an adjusted r-squared value lower than 0.4. This metric captures the amount of variance in the response variable, in this case `response_rate`, explained by the model, and a value that low indicates that this model is not realistically useful in predicting `respons_rate`, nor is any possible model with these variables. 
 
 
 ### Conclusions
 
-From all of this, answers to my original questions have emerged. The expected ~10% `response_rate` held true with a median of 10.61. My guess that weekends would see a higher `response_rate` was not reflected in reality. Weekends actually saw a slightly lower `response_rate` than weekdays. Interestingly, weekdays saw significantly lower variance than weekdays. Other patterns are present as well. The two groups also similar peaks, with high response rates recorded in late August and in mid-October for both. This includes the highest individuals day for `response_rate`, August 15th. 
+From all of this, answers to my original questions have emerged. The expected ~10% `response_rate` held true with a median of 10.61. My guess that weekends would see a higher `response_rate` was not reflected in reality. Weekends actually saw a slightly lower `response_rate` than weekdays. Interestingly, weekdays saw significantly lower variance than weekdays. Other patterns are present as well. The two groups also saw similar peaks, with high response rates recorded in late August and in mid-October for both. This includes the highest individuals day for `response_rate`, August 15th. 
 
 
 ANOVA models did not reveal any statistically significant relationships between the variables `Weekend` and `response_rate`, or `Month` and `response_rate`. My efforts to build a linear regression model to predict `response_rate` were also not fruitful, as the best models I could develop could not surpass an adjusted r-squared value of 0.327. 
