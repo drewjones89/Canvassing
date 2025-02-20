@@ -2,9 +2,7 @@
 title: "The Ground Game"
 author: "Drew Jones"
 subtitle: My contributions to the 84th District State House Race
-output:
-  html_document: default
-  word_document: default
+output: html_document
 ---
 
 ```{r setup, include=FALSE, echo = FALSE}
